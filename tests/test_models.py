@@ -27,7 +27,7 @@ import os
 import logging
 import unittest
 from decimal import Decimal
-from service.models import Product, Category, db
+from service.models import Product, Category, db, DataValidationError
 from service import app
 from tests.factories import ProductFactory
 
@@ -101,6 +101,162 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(new_product.available, product.available)
         self.assertEqual(new_product.category, product.category)
 
-    #
-    # ADD YOUR TEST CASES HERE
-    #
+    def test_read_a_product(self):
+        """It should Read a Product"""
+        product = ProductFactory()
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+        logger.debug(f"Display of product: {product}")
+        product.id = None
+        product.create()
+        self.assertIsNotNone(product.id)
+        # Fetch it back
+        found_product = Product.find(product.id)
+        self.assertEqual(found_product.id, product.id)
+        self.assertEqual(found_product.name, product.name)
+        self.assertEqual(found_product.description, product.description)
+        self.assertEqual(found_product.price, product.price)
+        self.assertEqual(found_product.available, product.available)
+        self.assertEqual(found_product.category, product.category)
+
+    def test_update_a_product(self):
+        """It should Update a product"""
+        product = ProductFactory()
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+        logger.debug(f"Display of product: {product}")
+
+        product.id = None
+        product.create()
+
+        self.assertIsNotNone(product.id)
+        original_id = product.id
+        original_description = product.description
+        logger.debug(f"Display of product after new creation: {product}")
+
+        product.description = "new description"
+
+        product.update()
+
+        products = Product.all()
+        self.assertEqual(len(products), 1)
+
+        found_product = products[0]
+        self.assertEqual(original_id, product.id)
+        self.assertEqual(found_product.description, product.description)
+        self.assertNotEqual(original_description, found_product.description)
+
+    def test_update_product_with_no_id(self):
+        """It should Raise an error when trying to update with no id"""
+        product = ProductFactory()
+        product.id = None
+        self.assertRaises(DataValidationError, product.update)
+
+    def test_delete_a_product(self):
+        """It should Delete a product"""
+        product = ProductFactory()
+        product.create()
+        products = Product.all()
+        self.assertEqual(len(products), 1)
+        product_from_db = products[0]
+        product_from_db.delete()
+
+        products_after_deletion = Product.all()
+        self.assertEqual(len(products_after_deletion), 0)
+
+    def test_list_all_products(self):
+        """It should List all Products"""
+        products = Product.all()
+        self.assertEqual(len(products), 0)
+
+        for _ in range(5):
+            product = ProductFactory()
+            product.create()
+
+        products = Product.all()
+        self.assertEqual(len(products), 5)
+        self.assertNotEqual(products[0].id, products[1].id)
+
+    def test_find_a_product_by_name(self):
+        """It should Find a Product by Name"""
+        products = Product.all()
+        self.assertEqual(len(products), 0)
+
+        products = ProductFactory.create_batch(5)
+        for product in products:
+            product.create()
+
+        products = Product.all()
+
+        first_product_name = products[0].name
+
+        count = len([product for product in products if product.name == first_product_name])
+
+        found = Product.find_by_name(first_product_name)
+        self.assertEqual(count, found.count())
+
+        for named_product in found:
+            self.assertEqual(named_product.name, first_product_name)
+
+    def test_find_a_product_by_availability(self):
+        """It should Find a Product by Availability"""
+        products = Product.all()
+        self.assertEqual(len(products), 0)
+
+        products = ProductFactory.create_batch(10)
+        for product in products:
+            product.create()
+
+        products = Product.all()
+
+        first_product_availability = products[0].available
+
+        count = len([product for product in products if product.available == first_product_availability])
+
+        found = Product.find_by_availability(first_product_availability)
+        self.assertEqual(count, found.count())
+
+        for avail_product in found:
+            self.assertEqual(avail_product.available, first_product_availability)
+
+    def test_find_a_product_by_category(self):
+        """It should Find a Product by Category"""
+        products = Product.all()
+        self.assertEqual(len(products), 0)
+
+        products = ProductFactory.create_batch(10)
+        for product in products:
+            product.create()
+
+        products = Product.all()
+
+        first_product_category = products[0].category
+
+        count = len([product for product in products if product.category == first_product_category])
+
+        found = Product.find_by_category(first_product_category)
+        self.assertEqual(count, found.count())
+
+        for product_category in found:
+            self.assertEqual(product_category.category, first_product_category)
+
+    def test_find_a_product_by_price(self):
+        """It should Find a Product by Price"""
+        products = Product.all()
+        self.assertEqual(len(products), 0)
+
+        products = ProductFactory.create_batch(10)
+        for product in products:
+            product.create()
+
+        products = Product.all()
+
+        first_product_price = products[0].price
+
+        count = len([product for product in products if product.price == first_product_price])
+
+        found = Product.find_by_price(first_product_price)
+        self.assertEqual(count, found.count())
+
+        for product_price in found:
+            self.assertEqual(product_price.price, first_product_price)
