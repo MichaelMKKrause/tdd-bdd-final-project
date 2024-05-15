@@ -35,14 +35,17 @@ DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql://postgres:postgres@localhost:5432/postgres"
 )
 
+logger = logging.getLogger()
+
 
 ######################################################################
 #  P R O D U C T   M O D E L   T E S T   C A S E S
 ######################################################################
 # pylint: disable=too-many-public-methods
-class TestProductModel(unittest.TestCase):
-    """Test Cases for Product Model"""
 
+class TestProductModel(unittest.TestCase):
+
+    """Test Cases for Product Model"""
     @classmethod
     def setUpClass(cls):
         """This runs once before the entire test suite"""
@@ -104,9 +107,7 @@ class TestProductModel(unittest.TestCase):
     def test_read_a_product(self):
         """It should Read a Product"""
         product = ProductFactory()
-        logger = logging.getLogger()
-        logger.setLevel(logging.DEBUG)
-        logger.debug(f"Display of product: {product}")
+        logger.info("Display of product: %s", product)
         product.id = None
         product.create()
         self.assertIsNotNone(product.id)
@@ -122,9 +123,7 @@ class TestProductModel(unittest.TestCase):
     def test_update_a_product(self):
         """It should Update a product"""
         product = ProductFactory()
-        logger = logging.getLogger()
-        logger.setLevel(logging.DEBUG)
-        logger.debug(f"Display of product: {product}")
+        logger.info("Display of product: %s", product)
 
         product.id = None
         product.create()
@@ -132,7 +131,7 @@ class TestProductModel(unittest.TestCase):
         self.assertIsNotNone(product.id)
         original_id = product.id
         original_description = product.description
-        logger.debug(f"Display of product after new creation: {product}")
+        logger.info("Display of product after new creation: %s", product)
 
         product.description = "new description"
 
@@ -256,6 +255,47 @@ class TestProductModel(unittest.TestCase):
         count = len([product for product in products if product.price == first_product_price])
 
         found = Product.find_by_price(first_product_price)
+        self.assertEqual(count, found.count())
+
+        for product_price in found:
+            self.assertEqual(product_price.price, first_product_price)
+
+    def test_deserialize_product_with_wrong_avail_type(self):
+        """It should Raise an error when trying to deserialize a product with the wrong type for availability (not boolean)"""
+        product = ProductFactory()
+        product_dict = product.serialize()
+        product_dict["available"] = "string, not boolean"
+        self.assertRaises(DataValidationError, product.deserialize, product_dict)
+
+    def test_deserialize_invalid_attribute(self):
+        """It should Raise an error when trying to deserialize a product with an invalid attribute"""
+        product = ProductFactory()
+        product_dict = product.serialize()
+        product_dict["category"] = "invalid category"
+        self.assertRaises(DataValidationError, product.deserialize, product_dict)
+
+    def test_deserialize_invalid_type(self):
+        """It should Raise an error when trying to deserialize a product of wrong type"""
+        product = ProductFactory()
+        product_dict = "no valid dictionary"
+        self.assertRaises(DataValidationError, product.deserialize, product_dict)
+
+    def test_find_a_product_by_price_as_string(self):
+        """It should Find a Product by Price, which is a string"""
+        products = Product.all()
+        self.assertEqual(len(products), 0)
+
+        products = ProductFactory.create_batch(10)
+        for product in products:
+            product.create()
+
+        products = Product.all()
+
+        first_product_price = products[0].price
+
+        count = len([product for product in products if product.price == first_product_price])
+
+        found = Product.find_by_price(str(first_product_price))
         self.assertEqual(count, found.count())
 
         for product_price in found:
