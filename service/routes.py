@@ -20,7 +20,7 @@ Product Store Service with UI
 """
 from flask import jsonify, request, abort
 from flask import url_for  # noqa: F401 pylint: disable=unused-import
-from service.models import Product
+from service.models import Product, Category
 from service.common import status  # HTTP Status Codes
 from . import app
 
@@ -108,12 +108,34 @@ def list_products():
 
     # Get the `name` parameter from the request (hint: use `request.args.get()`
     name = request.args.get("name")
+    # Get the `category` parameter from the request (hint: use `request.args.get()`
+    category = request.args.get("category")
+    # Get the `available` parameter from the request (hint: use `request.args.get()`
+    available = request.args.get("available")
 
     # test to see if you received the "name" query parameter
     # If you did, call the Product.find_by_name(name) method to retrieve products that match the specified name
     if name:
         app.logger.info("Find by name: %s", name)
         products = Product.find_by_name(name)
+
+    # test to see if you received the "category" query parameter
+    elif category:
+        # If you did, convert the category string retrieved from the query parameters
+        # to the corresponding enum value from the Category enumeration
+        category_value = Category[category]
+        # call the Product.find_by_category(category_value) method to retrieve products that match the specified category_value
+        app.logger.info("Find by category: %s", category)
+        products = Product.find_by_category(category_value)
+
+    # test to see if you received the "available" query parameter
+    elif available:
+        # If you did, convert the available string retrieved from the query parameters to a boolean value
+        available_value = available in ["True", "true"]
+        # call the Product.find_by_availability(available_value) method to retrieve products that
+        # match the specified available_value
+        app.logger.info("Find by availability: %s", available)
+        products = Product.find_by_availability(available_value)
     # If you didn't call list all
     else:
         app.logger.info("Find all")
