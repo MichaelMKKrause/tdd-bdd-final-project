@@ -98,9 +98,38 @@ def create_products():
 # L I S T   A L L   P R O D U C T S
 ######################################################################
 
-#
-# PLACE YOUR CODE TO LIST ALL PRODUCTS HERE
-#
+@app.route("/products", methods=["GET"])
+def list_products():
+    """Returns a list of Products"""
+    app.logger.info("Request to list Products...")
+
+    # Initialize an empty list to hold the products.
+    products = []
+
+    # Get the `name` parameter from the request (hint: use `request.args.get()`
+    name = request.args.get("name")
+
+    # test to see if you received the "name" query parameter
+    # If you did, call the Product.find_by_name(name) method to retrieve products that match the specified name
+    if name:
+        app.logger.info("Find by name: %s", name)
+        products = Product.find_by_name(name)
+    # If you didn't call list all
+    else:
+        app.logger.info("Find all")
+        # use the Product.all() method to retrieve all products
+        products = Product.all()
+
+    # create a list of serialize() products
+    product_list = [product.serialize() for product in products]
+
+    # log the number of products being returned in the list
+    app.logger.info("number of products being returned in the list: [%s]", len(product_list))
+
+    # return the list with a return code of status.HTTP_200_OK
+
+    return product_list, status.HTTP_200_OK
+
 
 ######################################################################
 # READ A PRODUCT
@@ -126,12 +155,9 @@ def get_products(product_id):
     # return the serialize() version of the product with a return code of status.HTTP_200_OK
     return product.serialize(), status.HTTP_200_OK
 
-######################################################################
-# U P D A T E   A   P R O D U C T
-######################################################################
 
 ######################################################################
-# UPDATE AN EXISTING PRODUCT
+# U P D A T E   A   P R O D U C T
 ######################################################################
 @app.route("/products/<int:product_id>", methods=["PUT"])
 def update_products(product_id):
@@ -159,6 +185,7 @@ def update_products(product_id):
     # return the serialize() version of the product with a return code of status.HTTP_200_OK
     return product.serialize(), status.HTTP_200_OK
 
+
 ######################################################################
 # DELETE A PRODUCT
 ######################################################################
@@ -179,4 +206,4 @@ def delete_products(product_id):
         product.delete()
 
     # return and empty body ("") with a return code of status.HTTP_204_NO_CONTENT
-    return {"", status.HTTP_204_NO_CONTENT}
+    return "", status.HTTP_204_NO_CONTENT
